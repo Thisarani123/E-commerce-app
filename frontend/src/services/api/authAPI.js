@@ -6,20 +6,19 @@ const api = axios.create({
   baseURL: API_BASE_URL,
 });
 
-// Add auth token interceptor
+export const authAPI = {
+  login: (credentials) => api.post('/auth/login', credentials),
+  register: (userData) => api.post('/auth/register', userData),
+  verifyOTP: (data) => api.post('/auth/verify-otp', data),
+  socialLogin: (provider) => api.post(`/auth/${provider}`),
+};
+
+// Add interceptors for auth token
 api.interceptors.request.use((config) => {
-  // In real app, get token from AsyncStorage
-  const token = null; // Replace with real token later
+  // In React Native, use AsyncStorage instead of localStorage
+  const token = localStorage.getItem('token'); // ← We'll fix this later
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
-
-export const authAPI = {
-  login: (credentials) => api.post('/auth/login', credentials),
-  register: (userData) => api.post('/auth/register', userData),
-  verifyOTP: (data) => api.post('/auth/verify-otp', data),
-  resendOTP: (userId) => api.post('/auth/resend-otp', { userId }),
-  socialLogin: (provider) => api.post(`/auth/${provider}`),
-};
