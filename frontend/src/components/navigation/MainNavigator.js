@@ -1,7 +1,17 @@
 // src/components/navigation/MainNavigator.js
 import React from 'react';
+import { useSelector } from 'react-redux';
+import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
+
+// Auth Screens (for unauthenticated users)
+import LoginScreen from '../../screens/auth/LoginScreen';
+import RegisterScreen from '../../screens/auth/RegisterScreen';
+import OTPVerificationScreen from '../../screens/auth/OTPVerificationScreen';
+
+// Main App Screens (for authenticated users)
 import HomeScreen from '../../screens/home/HomeScreen';
 import ProductsScreen from '../../screens/products/ProductsScreen';
 import SearchScreen from '../../screens/search/SearchScreen';
@@ -10,8 +20,21 @@ import WishlistScreen from '../../screens/products/WishlistScreen';
 import ProfileScreen from '../../screens/profile/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator();
 
-export default function MainNavigator() {
+// 🔐 Auth Flow (no tabs)
+function AuthNavigator() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="OTPVerification" component={OTPVerificationScreen} />
+    </Stack.Navigator>
+  );
+}
+
+// 🛒 Main App Flow (with tabs)
+function AppTabs() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -39,4 +62,11 @@ export default function MainNavigator() {
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
+}
+
+// 🚀 Main Navigator: Switch based on auth state
+export default function MainNavigator() {
+  const { user } = useSelector(state => state.auth);
+
+  return user ? <AppTabs /> : <AuthNavigator />;
 }

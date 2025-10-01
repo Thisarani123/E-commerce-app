@@ -15,13 +15,13 @@ const transporter = nodemailer.createTransport({
   service: process.env.EMAIL_SERVICE,
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
+    pass: process.env.EMAIL_PASS,
+  },
 });
 
-//@desc Register user
-//@route POST /api/auth/register
-//@access Public
+// @desc    Register user
+// @route   POST /api/auth/register
+// @access  Public
 exports.register = async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -29,7 +29,7 @@ exports.register = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Validation failed',
-        errors: errors.array()
+        errors: errors.array(),
       });
     }
 
@@ -40,7 +40,7 @@ exports.register = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: 'User already exists with this email'
+        message: 'User already exists with this email',
       });
     }
 
@@ -51,7 +51,7 @@ exports.register = async (req, res) => {
     const otp = user.generateOTP();
     await user.save();
 
-    // Send OTP email (optional for now)
+    // Send OTP email
     try {
       await transporter.sendMail({
         from: process.env.EMAIL_USER,
@@ -61,10 +61,11 @@ exports.register = async (req, res) => {
           <h2>Email Verification</h2>
           <p>Your OTP code is: <strong>${otp}</strong></p>
           <p>This code will expire in 10 minutes.</p>
-        `
+        `,
       });
     } catch (emailError) {
       console.error('Email sending failed:', emailError);
+      // Don't fail registration just because email failed
     }
 
     // Create cart for user
@@ -78,22 +79,23 @@ exports.register = async (req, res) => {
           id: user._id,
           name: user.name,
           email: user.email,
-          phone: user.phone
-        }
-      }
+          phone: user.phone,
+        },
+      },
     });
   } catch (error) {
+    console.error('Registration error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error during registration',
-      error: error.message
+      error: error.message,
     });
   }
 };
 
-//@desc Login user
-//@route POST /api/auth/login
-//@access Public
+// @desc    Login user
+// @route   POST /api/auth/login
+// @access  Public
 exports.login = async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -101,7 +103,7 @@ exports.login = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Validation failed',
-        errors: errors.array()
+        errors: errors.array(),
       });
     }
 
@@ -112,7 +114,7 @@ exports.login = async (req, res) => {
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials'
+        message: 'Invalid credentials',
       });
     }
 
@@ -121,7 +123,7 @@ exports.login = async (req, res) => {
     if (!isMatch) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials'
+        message: 'Invalid credentials',
       });
     }
 
@@ -146,24 +148,25 @@ exports.login = async (req, res) => {
           email: user.email,
           phone: user.phone,
           isVerified: user.isVerified,
-          avatar: user.avatar
+          avatar: user.avatar,
         },
         token,
-        cart: cart || { items: [], total: 0 }
-      }
+        cart: cart || { items: [], total: 0 },
+      },
     });
   } catch (error) {
+    console.error('Login error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error during login',
-      error: error.message
+      error: error.message,
     });
   }
 };
 
-//@desc Verify OTP
-//@route POST /api/auth/verify-otp
-//@access Public
+// @desc    Verify OTP
+// @route   POST /api/auth/verify-otp
+// @access  Public
 exports.verifyOTP = async (req, res) => {
   try {
     const { userId, otp } = req.body;
@@ -172,21 +175,21 @@ exports.verifyOTP = async (req, res) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found'
+        message: 'User not found',
       });
     }
 
     if (!user.otp || user.otp.code !== otp) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid OTP'
+        message: 'Invalid OTP',
       });
     }
 
     if (user.otp.expiresAt < new Date()) {
       return res.status(400).json({
         success: false,
-        message: 'OTP has expired'
+        message: 'OTP has expired',
       });
     }
 
@@ -204,23 +207,24 @@ exports.verifyOTP = async (req, res) => {
           id: user._id,
           name: user.name,
           email: user.email,
-          isVerified: true
+          isVerified: true,
         },
-        token
-      }
+        token,
+      },
     });
   } catch (error) {
+    console.error('OTP verification error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error during OTP verification',
-      error: error.message
+      error: error.message,
     });
   }
 };
 
-//@desc Resend OTP
-//@route POST /api/auth/resend-otp
-//@access Public
+// @desc    Resend OTP
+// @route   POST /api/auth/resend-otp
+// @access  Public
 exports.resendOTP = async (req, res) => {
   try {
     const { userId } = req.body;
@@ -229,14 +233,13 @@ exports.resendOTP = async (req, res) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found'
+        message: 'User not found',
       });
     }
 
     const otp = user.generateOTP();
     await user.save();
 
-    // Send OTP email
     try {
       await transporter.sendMail({
         from: process.env.EMAIL_USER,
@@ -246,40 +249,48 @@ exports.resendOTP = async (req, res) => {
           <h2>Email Verification</h2>
           <p>Your OTP code is: <strong>${otp}</strong></p>
           <p>This code will expire in 10 minutes.</p>
-        `
+        `,
       });
     } catch (emailError) {
-      console.error('Email sending failed:', emailError);
+      console.error('Email resend failed:', emailError);
     }
 
     res.json({
       success: true,
-      message: 'OTP resent successfully'
+      message: 'OTP resent successfully',
     });
   } catch (error) {
+    console.error('Resend OTP error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error during OTP resend',
-      error: error.message
+      error: error.message,
     });
   }
 };
 
-//@desc Get current user
-//@route GET /api/auth/me
-//@access Private
+// @desc    Get current user
+// @route   GET /api/auth/me
+// @access  Private
 exports.getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
     res.json({
       success: true,
-      data: { user }
+      data: { user },
     });
   } catch (error) {
+    console.error('Get user error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 };

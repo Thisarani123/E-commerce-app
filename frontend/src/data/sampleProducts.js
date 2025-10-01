@@ -231,3 +231,23 @@ export const products = [
         specifications: { dpi: '4000', battery: '70d', connectivity: 'Bluetooth' }
     },
 ];
+
+// Helper functions
+export const getProductsByCategory = (categoryId) =>
+  products.filter(p => p.category === categoryId);
+
+export const getRelatedProducts = (product, limit = 4) =>
+  products
+    .filter(p => p.category === product.category && p.id !== product.id)
+    .slice(0, limit);
+
+export const getSimilarProducts = (product, limit = 4) => {
+  const sameBrand = products.filter(p => p.brand === product.brand && p.id !== product.id);
+  const samePriceRange = products.filter(
+    p => Math.abs(p.price - product.price) < 200 && p.id !== product.id
+  );
+
+  return [...sameBrand, ...samePriceRange]
+    .filter((p, i, arr) => arr.findIndex(pp => pp.id === p.id) === i)
+    .slice(0, limit);
+};
